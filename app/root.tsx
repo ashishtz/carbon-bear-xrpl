@@ -19,6 +19,7 @@ import { Networks, XRPLClient } from '@nice-xrpl/react-xrpl'
 import tailwindStylesheetUrl from './styles/tailwind.css'
 import { getEnv } from './utils/env.server'
 import { getSession } from '~/utils/session.server'
+import Header from '~/components/header';
 
 export const links: LinksFunction = () => {
 	return [
@@ -77,7 +78,7 @@ export default function App() {
 			<body className="flex h-full flex-col justify-between bg-night-700 text-white">
 				<div className="flex-1">
 					<XRPLClient network={Networks.Devnet}>
-						{data.isAuthenticated && <div>Header</div>}
+						{data.isAuthenticated && <Header />}
 						<Outlet />
 					</XRPLClient>
 				</div>

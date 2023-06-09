@@ -148,7 +148,7 @@ export function getButtonClassName({
 	variant,
 }: {
 	size: 'xs' | 'sm' | 'md' | 'md-wide' | 'pill'
-	variant: 'primary' | 'secondary'
+	variant: 'primary' | 'secondary' | 'none'
 }) {
 	const baseClassName =
 		'flex justify-center items-center rounded-full font-bold outline-none transition-[background-color,color] duration-200 disabled:bg-night-500 disabled:text-night-200'

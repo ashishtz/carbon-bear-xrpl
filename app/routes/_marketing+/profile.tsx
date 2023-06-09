@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { Button } from '~/utils/forms'
 import Modal from '~/components/modal'
+import {
+	type DataFunctionArgs,
+} from '@remix-run/node'
+import { requireAuthenticated } from '~/utils/auth.server'
+
+
+export async function loader({ request }: DataFunctionArgs) {
+	await requireAuthenticated(request)
+	return null;
+}
 
 export default function UserProfile() {
 	const [openSell, setOpenSell] = useState(false)

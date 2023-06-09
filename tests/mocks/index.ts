@@ -1,7 +1,7 @@
 import { rest } from 'msw'
 import { setupServer } from 'msw/node'
 import closeWithGrace from 'close-with-grace'
-import { requiredHeader, writeEmail } from './utils.ts'
+import { requiredHeader, writeEmail } from './utils'
 
 const handlers = [
 	process.env.REMIX_DEV_HTTP_ORIGIN
