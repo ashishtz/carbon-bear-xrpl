@@ -29,3 +29,10 @@ model Transaction {
   updatedAt DateTime @updatedAt
   userId    String?
 }
+
+model Admincreds {
+  id         String @id @unique @default(cuid())
+  accountId  String @unique
+  privatekey String
+  publicKey  String
+}

@@ -11,6 +11,14 @@ CREATE TABLE
 		"updatedAt" DATETIME NOT NULL
 	);
 
+CREATE TABLE
+	"AdminCreds" (
+		"id" TEXT NOT NULL PRIMARY KEY,
+		"accountId" TEXT NOT NULL,
+		"privatekey" TEXT NOT NULL,
+		"publicKey" TEXT NOT NULL
+	);
+
 -- CreateTable
 CREATE TABLE
 	"Transaction" (
@@ -20,7 +28,7 @@ CREATE TABLE
 		"buyerId" TEXT NOT NULL,
 		"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		"updatedAt" DATETIME NOT NULL,
-		CONSTRAINT "sender_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+		CONSTRAINT "buyer_userId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 	);
 
 CREATE INDEX "User_role_index" ON "User" ("role");

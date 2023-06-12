@@ -11,8 +11,9 @@ const AccountInfo = ({ account, wallet }: AccountInfoShape) => {
 			<b className="text-lg">Please save below information for future use</b>
 
 			<div><b>AccountId(Use this Id to login): </b>{account.Account}</div>
-			<div><b>Wallet Public Key: </b>{wallet.publicKey}</div>
 			<div><b>Wallet Private Key: </b>{wallet.privateKey}</div>
+			<div><b>Wallet Public Key: </b>{wallet.publicKey}</div>
+			<div><b>Seed: </b>{wallet.seed}</div>
 		</div>
 	)
 }

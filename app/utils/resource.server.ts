@@ -1,3 +1,4 @@
+import { getUserWallet } from "./xrpl.server";
 
 export type Product = typeof products[0];
 
@@ -30,6 +31,8 @@ export const findProduct = (id: string) => {
 }
 
 
-export const claimPurchase = (product: Product, accountId: string) => {
-	
+export const claimPurchase = async (product: Product, accountId: string) => {
+	// const carbon = +product.carbon;
+	const wallet = await getUserWallet(accountId);
+	console.log('wallet', wallet);
 }

@@ -1,7 +1,4 @@
-import { useCallback, useMemo, useEffect } from 'react'
-import { Client as xrplClient } from 'xrpl'
-import { generateSeed, deriveKeypair } from 'ripple-keypairs'
-// import { encodeSeed } from 'ripple-address-codec';
+import { useCallback } from 'react'
 import { useXRPLClient } from '@nice-xrpl/react-xrpl'
 
 export const Networks = {
@@ -14,13 +11,14 @@ export function useCreateAccount() {
 
 	const create = useCallback(async () => {
 		await client.connect()
-		const fund_result = await client.fundWallet()
+		const fund_result = await client.fundWallet(null, { amount: '200000' })
 		const test_wallet = fund_result.wallet
 		const response = await client.request({
 			command: 'account_info',
 			account: test_wallet.address,
 			ledger_index: 'validated',
 		})
+		await client.disconnect()
 		return { account: response.result.account_data, wallet: test_wallet }
 	}, [client])
 
@@ -38,6 +36,7 @@ export const useGetAccount = () => {
 				account: publicKey,
 				ledger_index: 'current',
 			})
+			await client.disconnect()
 			return response
 		},
 		[client],

@@ -24,7 +24,8 @@
     "test:e2e:run": "cross-env CI=true playwright test",
     "test:e2e:install": "npx playwright install chromium --with-deps",
     "typecheck": "tsc",
-    "validate": "run-p \"test -- --run\" lint typecheck test:e2e:run"
+    "validate": "run-p \"test -- --run\" lint typecheck test:e2e:run",
+    "seed": "prisma db seed"
   },
   "eslintIgnore": [
     "/node_modules",
@@ -53,6 +54,7 @@
     "@remix-run/serve": "1.16.1",
     "@remix-run/server-runtime": "1.16.1",
     "address": "^1.2.2",
+    "axios": "^1.4.0",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^8.3.0",
     "cachified": "^3.5.4",
