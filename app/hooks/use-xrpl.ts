@@ -1,29 +1,8 @@
 import { useCallback } from 'react'
-import { useXRPLClient } from '@nice-xrpl/react-xrpl'
-
-export const Networks = {
-	Testnet: 'wss://s.altnet.rippletest.net:51233',
-	Devnet: 'wss://s.devnet.rippletest.net:51233',
-}
-
-export function useCreateAccount() {
-	const client = useXRPLClient()
-
-	const create = useCallback(async () => {
-		await client.connect()
-		const fund_result = await client.fundWallet(null, { amount: '200000' })
-		const test_wallet = fund_result.wallet
-		const response = await client.request({
-			command: 'account_info',
-			account: test_wallet.address,
-			ledger_index: 'validated',
-		})
-		await client.disconnect()
-		return { account: response.result.account_data, wallet: test_wallet }
-	}, [client])
-
-	return create
-}
+import {
+	useXRPLClient,
+	useCreateWallet,
+} from '@nice-xrpl/react-xrpl'
 
 export const useGetAccount = () => {
 	const client = useXRPLClient()
@@ -43,4 +22,18 @@ export const useGetAccount = () => {
 	)
 
 	return get
+}
+
+export function useCreateAccount() {
+	const createWallet = useCreateWallet()
+	const getAccount = useGetAccount()
+
+	const create = useCallback(async () => {
+		const fund_result = await createWallet('20')
+		const wallet = fund_result.wallet
+		const account = await getAccount(wallet.address)
+		return { account, wallet }
+	}, [createWallet, getAccount])
+
+	return create
 }

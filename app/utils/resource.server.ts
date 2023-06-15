@@ -1,4 +1,4 @@
-import { getUserWallet } from "./xrpl.server";
+import { mintToken } from "./xrpl.server";
 
 export type Product = typeof products[0];
 
@@ -31,8 +31,6 @@ export const findProduct = (id: string) => {
 }
 
 
-export const claimPurchase = async (product: Product, accountId: string) => {
-	// const carbon = +product.carbon;
-	const wallet = await getUserWallet(accountId);
-	console.log('wallet', wallet);
+export const claimPurchase = (product: Product, accountId: string) => {
+	return mintToken(accountId, product);
 }

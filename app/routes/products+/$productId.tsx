@@ -37,7 +37,11 @@ export async function action({ request }: DataFunctionArgs) {
 	const session = await getSession(request.headers.get('cookie'))
 	const { sessionId } = session.data
 
-	const claim = await claimPurchase(product, sessionId)
+	const claim = await claimPurchase(product, sessionId);
+
+	if(!claim){
+		return 'Something went wrong. Can not make transaction at the moment.';
+	}
 
 	return ''
 }
