@@ -1,8 +1,5 @@
 import { useCallback } from 'react'
-import {
-	useXRPLClient,
-	useCreateWallet,
-} from '@nice-xrpl/react-xrpl'
+import { useXRPLClient, useCreateWallet } from '@nice-xrpl/react-xrpl'
 
 export const useGetAccount = () => {
 	const client = useXRPLClient()

@@ -77,7 +77,7 @@ export default function App() {
 			</head>
 			<body className="flex h-full flex-col justify-between bg-night-700 text-white">
 				<div className="flex-1">
-					<XRPLClient network={Networks.Devnet}>
+					<XRPLClient network={Networks.Testnet}>
 						{data.isAuthenticated && <Header />}
 						<Outlet />
 					</XRPLClient>

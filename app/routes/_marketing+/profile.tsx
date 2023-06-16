@@ -5,15 +5,23 @@ import {
 	type DataFunctionArgs,
 } from '@remix-run/node'
 import { requireAuthenticated } from '~/utils/auth.server'
+import { getHotWalletBalance } from '~/utils/xrpl.server'
+import { getSession } from '~/utils/session.server'
+import { useLoaderData } from '@remix-run/react'
 
 
 export async function loader({ request }: DataFunctionArgs) {
 	await requireAuthenticated(request)
-	return null;
+	const session = await getSession(request.headers.get('cookie'))
+	const { sessionId } = session.data
+	const balance = await getHotWalletBalance(sessionId);
+	return balance;
 }
 
 export default function UserProfile() {
 	const [openSell, setOpenSell] = useState(false)
+	const data = useLoaderData<typeof loader>();
+	console.log('data', data);
 	const toggleModal = () => setOpenSell(prev => !prev)
 
 	return (

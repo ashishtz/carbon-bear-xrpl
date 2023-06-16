@@ -3,12 +3,14 @@ import xrpl, {
 	type TrustSet,
 	type Payment,
 	type TransactionMetadata,
+	type Client,
+	type Wallet,
 } from 'xrpl'
 import { Networks } from '@nice-xrpl/react-xrpl'
 import { type Product } from './resource.server'
 
 const xrplClient = () =>
-	new xrpl.Client(Networks.Devnet, {
+	new xrpl.Client(Networks.Testnet, {
 		connectionTimeout: 50000,
 	})
 
@@ -28,16 +30,13 @@ const stringToHex = (str: string) => {
 const BEAR = stringToHex('BEAR')
 // const REBEAR = stringToHex('REBEAR')
 
-export const accountSet = async (accountId: string, seed: string) => {
-	const client = xrplClient()
-	await client.connect()
+const DOMAIN = '6578616D706C652E636F6D' //example.com
 
-	const wallet = xrpl.Wallet.fromSeed(seed)
-
+export const accountSet = async (client: Client, wallet: Wallet) => {
 	const setAccount: AccountSet = {
 		TransactionType: 'AccountSet',
-		Account: accountId,
-		Domain: stringToHex('example.com'),
+		Account: wallet.address,
+		Domain: DOMAIN,
 		SetFlag: xrpl.AccountSetAsfFlags.asfRequireAuth,
 		Flags:
 			xrpl.AccountSetTfFlags.tfDisallowXRP |
@@ -45,17 +44,46 @@ export const accountSet = async (accountId: string, seed: string) => {
 	}
 
 	const prepared = await client.autofill(setAccount)
-	const signed = wallet.sign(prepared)
+	try {
+		const signed = wallet.sign(prepared)
+		const result = await client.submitAndWait(signed.tx_blob)
+		const meta = result.result.meta as TransactionMetadata
 
-	const result = await client.submitAndWait(signed.tx_blob)
+		if (meta.TransactionResult == 'tesSUCCESS') {
+			return result.result
+		} else {
+			return null
+		}
+	} catch (err: any) {
+		throw new Error(err)
+	}
+}
 
-	const meta = result.result.meta as TransactionMetadata
+export const setTrustLine = async (client: Client, hotWallet: Wallet) => {
+	const wallet = xrpl.Wallet.fromSeed(process.env.ADMIN_SEED!)
+	const issuingAccount = wallet.address
 
-	if (meta.TransactionResult == 'tesSUCCESS') {
-		return result.result
-	} else {
+	const trustSet_tx: TrustSet = {
+		TransactionType: 'TrustSet',
+		Account: hotWallet.address,
+		LimitAmount: {
+			currency: BEAR,
+			issuer: issuingAccount,
+			value: '10000000000',
+		},
+	}
+	// Creating a trustline
+	const ts_prepared = await client.autofill(trustSet_tx)
+	const ts_signed = hotWallet.sign(ts_prepared)
+
+	const ts_result = await client.submitAndWait(ts_signed.tx_blob)
+	const meta = ts_result.result.meta as TransactionMetadata
+
+	if (meta.TransactionResult !== 'tesSUCCESS') {
 		return null
 	}
+
+	return ts_result.result
 }
 
 export async function getUserInfo(accountId: string) {
@@ -80,8 +108,11 @@ export async function getHotWalletBalance(accountId: string) {
 		account: accountId,
 		ledger_index: 'validated',
 	})
-	client.disconnect()
-	return balance
+	await client.disconnect()
+	const total = balance.result.lines.reduce((acc, curr) => {
+		return acc + Number(curr.balance)
+	}, 0)
+	return { ...balance, total }
 }
 
 export async function getColdWalletBalance(
@@ -97,7 +128,7 @@ export async function getColdWalletBalance(
 		ledger_index: 'validated',
 		hotwallet: [recepientAccountId],
 	})
-	client.disconnect()
+	await client.disconnect()
 	return balance
 }
 
@@ -107,27 +138,6 @@ export async function mintToken(accountId: string, product: Product) {
 
 	const wallet = xrpl.Wallet.fromSeed(process.env.ADMIN_SEED!)
 	const issuingAccount = wallet.address
-
-	const trustSet_tx: TrustSet = {
-		TransactionType: 'TrustSet',
-		Account: accountId,
-		LimitAmount: {
-			currency: BEAR,
-			issuer: issuingAccount,
-			value: '10000000000',
-		},
-	}
-	// Creating a trustline
-	const ts_prepared = await client.autofill(trustSet_tx)
-	const ts_signed = wallet.sign(ts_prepared)
-
-	const ts_result = await client.submitAndWait(ts_signed.tx_blob)
-
-	const meta = ts_result.result.meta as TransactionMetadata
-
-	if (meta.TransactionResult !== 'tesSUCCESS') {
-		return false
-	}
 
 	const send_token_tx: Payment = {
 		TransactionType: 'Payment',
@@ -152,7 +162,31 @@ export async function mintToken(accountId: string, product: Product) {
 		return false
 	}
 
-	client.disconnect()
+	await client.disconnect()
 
 	return pay_result.result
+}
+
+export const createAccount = async () => {
+	const client = xrplClient()
+	await client.connect()
+
+	const wallet = await client.fundWallet(null, { amount: '20' })
+	const account = await client.request({
+		command: 'account_info',
+		account: wallet.wallet.address,
+		ledger_index: 'current',
+	})
+
+	const setAccount = await accountSet(client, wallet.wallet)
+	if (!setAccount) {
+		return null
+	}
+	const trustLine = await setTrustLine(client, wallet.wallet)
+	if (!trustLine) {
+		return null
+	}
+
+	await client.disconnect()
+	return { account: account, wallet: wallet.wallet }
 }

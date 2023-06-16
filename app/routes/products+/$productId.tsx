@@ -23,32 +23,39 @@ export async function loader({ request, params }: DataFunctionArgs) {
 export async function action({ request }: DataFunctionArgs) {
 	const formData = await request.clone().formData()
 	const productId = formData.get('productId')
+	const response = {
+		status: 'error',
+		message: '',
+	}
 
 	if (!productId) {
-		return 'Something went wrong while selecting a product. Please try again later.'
+		response.message =
+			'Something went wrong while selecting a product. Please try again later.'
 	}
 
 	const product = findProduct(String(productId))
 
 	if (!product) {
-		return 'This product does not exist in our product.'
+		response.message = 'This product does not exist in our product.'
 	}
 
 	const session = await getSession(request.headers.get('cookie'))
 	const { sessionId } = session.data
 
-	const claim = await claimPurchase(product, sessionId);
+	const claim = await claimPurchase(product!, sessionId)
 
-	if(!claim){
-		return 'Something went wrong. Can not make transaction at the moment.';
+	if (!claim) {
+		response.message =
+			'Something went wrong. Can not make transaction at the moment.'
 	}
-
-	return ''
+	response.status = 'success'
+	response.message = `Your purchase claim is passed. You have received ${product?.carbon} Carbon Bear tokens`
+	return response
 }
 
 const ProductDetails = () => {
 	const product = useLoaderData<Product>()
-	const error = useActionData<string>()
+	const response = useActionData<{ status: string; message: string }>()
 
 	return (
 		<div className="mt-10 flex p-4">
@@ -71,9 +78,19 @@ const ProductDetails = () => {
 							Claim Purchase
 						</Button>
 					</Form>
-					{!!error && (
+					{!!response?.status && !!response?.message && (
 						<div className="mt-2">
-							<span className="text-red-500">{error}</span>
+							{
+								<span
+									className={
+										response.status == 'error'
+											? 'text-red-500'
+											: 'text-green-500'
+									}
+								>
+									{response.message}
+								</span>
+							}
 						</div>
 					)}
 				</div>

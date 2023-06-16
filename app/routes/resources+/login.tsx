@@ -1,7 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node'
-import { useFetcher } from '@remix-run/react'
+import { useFetcher, useActionData } from '@remix-run/react'
 import { AuthorizationError } from 'remix-auth'
 import { FormStrategy } from 'remix-auth-form'
 import { z } from 'zod'
@@ -10,8 +10,9 @@ import { Button, ErrorList, Field } from '~/utils/forms'
 import { safeRedirect } from '~/utils/misc'
 import { commitSession, getSession } from '~/utils/session.server'
 import { useCreateAccount } from '~/hooks/use-xrpl'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import AccountInfo from '~/components/AccountInfo'
+import { createAccount } from '~/utils/xrpl.server'
 
 export const LoginFormSchema = z.object({
 	accountId: z.string(),
@@ -20,59 +21,70 @@ export const LoginFormSchema = z.object({
 
 export async function action({ request }: DataFunctionArgs) {
 	const formData = await request.clone().formData()
-	const submission = parse(formData, {
-		schema: LoginFormSchema,
-		acceptMultipleErrors: () => true,
-	})
-	if (!submission.value || submission.intent !== 'submit') {
-		return json(
-			{
-				status: 'error',
-				submission,
-			} as const,
-			{ status: 400 },
-		)
-	}
 
-	let sessionId: string | null = null
-	try {
-		sessionId = await authenticator.authenticate(FormStrategy.name, request, {
-			throwOnError: true,
+	const formType = formData.get('formType')
+
+	if (formType === 'login') {
+		const submission = parse(formData, {
+			schema: LoginFormSchema,
+			acceptMultipleErrors: () => true,
 		})
-	} catch (error) {
-		if (error instanceof AuthorizationError) {
+		if (!submission.value || submission.intent !== 'submit') {
 			return json(
 				{
 					status: 'error',
-					submission: {
-						...submission,
-						error: {
-							// show authorization error as a form level error message.
-							'': error.message,
-						},
-					},
+					submission,
 				} as const,
 				{ status: 400 },
 			)
 		}
-		throw error
-	}
 
-	const session = await getSession(request.headers.get('cookie'))
-	session.set(authenticator.sessionKey, sessionId)
-	const { redirectTo } = submission.value
-	const newCookie = await commitSession(session, {
-		maxAge: 60 * 60 * 24 * 7,
-	})
-	if (redirectTo) {
-		throw redirect(safeRedirect(redirectTo), {
+		let sessionId: string | null = null
+		try {
+			sessionId = await authenticator.authenticate(FormStrategy.name, request, {
+				throwOnError: true,
+			})
+		} catch (error) {
+			if (error instanceof AuthorizationError) {
+				return json(
+					{
+						status: 'error',
+						submission: {
+							...submission,
+							error: {
+								// show authorization error as a form level error message.
+								'': error.message,
+							},
+						},
+					} as const,
+					{ status: 400 },
+				)
+			}
+			throw error
+		}
+
+		const session = await getSession(request.headers.get('cookie'))
+		session.set(authenticator.sessionKey, sessionId)
+		const { redirectTo } = submission.value
+		const newCookie = await commitSession(session, {
+			maxAge: 60 * 60 * 24 * 7,
+		})
+		if (redirectTo) {
+			throw redirect(safeRedirect(redirectTo), {
+				headers: { 'Set-Cookie': newCookie },
+			})
+		}
+
+		return json({ status: 'success', submission } as const, {
 			headers: { 'Set-Cookie': newCookie },
 		})
 	}
-	
-	return json({ status: 'success', submission } as const, {
-		headers: { 'Set-Cookie': newCookie },
-	})
+
+	const submission = await createAccount()
+
+	if (submission?.account && submission.wallet) {
+		return json(submission)
+	}
 }
 
 export function InlineLogin({
@@ -83,8 +95,7 @@ export function InlineLogin({
 	formError?: string | null
 }) {
 	const loginFetcher = useFetcher<typeof action>()
-	const createAccount = useCreateAccount()
-	const [isLoading, setIsLoading] = useState(false)
+	const registerFetcher = useFetcher<typeof action>()
 	const [accountInfo, setAccountInfo] = useState<any>(null)
 
 	const [form, fields] = useForm({
@@ -97,19 +108,10 @@ export function InlineLogin({
 		shouldRevalidate: 'onBlur',
 	})
 
-	const createNewAccount = () => {
-		setIsLoading(true)
-		createAccount()
-			.then(info => {
-				setAccountInfo(info)
-			})
-			.catch(err => {
-				console.log('err', err)
-			})
-			.finally(() => {
-				setIsLoading(false)
-			})
-	}
+	const [registerForm] = useForm({
+		id: 'inline-register',
+		shouldRevalidate: 'onBlur',
+	})
 
 	return (
 		<div>
@@ -120,6 +122,7 @@ export function InlineLogin({
 					name="login"
 					{...form.props}
 				>
+					<input type="hidden" name="formType" value="login" />
 					<Field
 						labelProps={{
 							htmlFor: fields.accountId.id,
@@ -156,15 +159,26 @@ export function InlineLogin({
 				</loginFetcher.Form>
 				<div className="flex items-center justify-center gap-2 pt-6">
 					<span className="text-night-200">New here?</span>
-					<Button
-						status={isLoading ? 'pending' : 'idle'}
-						onClick={createNewAccount}
+					<registerFetcher.Form
+						{...registerForm.props}
+						method="POST"
+						action="/resources/login"
+						name="registration"
 					>
-						Create an account
-					</Button>
+						<input type="hidden" name="formType" value="registration" />
+						<Button
+							status={
+								registerFetcher.state === 'submitting' ? 'pending' : 'idle'
+							}
+							variant="none"
+							type="submit"
+						>
+							Create an account
+						</Button>
+					</registerFetcher.Form>
 				</div>
 			</div>
-			{!!accountInfo && <AccountInfo {...accountInfo} />}
+			{!!registerFetcher.data && <AccountInfo {...registerFetcher.data} />}
 		</div>
 	)
 }
