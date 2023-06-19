@@ -1,28 +1,115 @@
-import { useState } from 'react'
-import { Button } from '~/utils/forms'
-import Modal from '~/components/modal'
-import {
-	type DataFunctionArgs,
-} from '@remix-run/node'
-import { requireAuthenticated } from '~/utils/auth.server'
-import { getHotWalletBalance } from '~/utils/xrpl.server'
-import { getSession } from '~/utils/session.server'
-import { useLoaderData } from '@remix-run/react'
+import { useEffect, useState } from 'react'
+import { conform, useForm } from '@conform-to/react'
+import { type DataFunctionArgs, json } from '@remix-run/node'
+import { useLoaderData, useFetcher } from '@remix-run/react'
+import { z } from 'zod'
+import { getFieldsetConstraint, parse } from '@conform-to/zod'
 
+import { Button, ErrorList, Field } from '~/utils/forms'
+import Modal from '~/components/modal'
+import { requireAuthenticated } from '~/utils/auth.server'
+import { getSession } from '~/utils/session.server'
+import { type BalanceShape, useAccountBalance } from '~/hooks/use-xrpl'
+import { createOffer, validateWallet } from '~/utils/xrpl.server'
+
+export const CreateOfferSchema = z.object({
+	seed: z.string().min(1, 'Account seed is required'),
+	amount: z.string().min(1, 'Amount is required'),
+	xrp: z.string().min(1, 'XRP Amount is required'),
+})
 
 export async function loader({ request }: DataFunctionArgs) {
 	await requireAuthenticated(request)
 	const session = await getSession(request.headers.get('cookie'))
 	const { sessionId } = session.data
-	const balance = await getHotWalletBalance(sessionId);
-	return balance;
+	return { accountId: sessionId }
+}
+
+export async function action({ request }: DataFunctionArgs) {
+	await requireAuthenticated(request)
+	const formData = await request.clone().formData()
+	const submission = parse(formData, {
+		schema: CreateOfferSchema,
+		acceptMultipleErrors: () => true,
+	})
+
+	if (!submission.value || submission.intent !== 'submit') {
+		return json(
+			{
+				status: 'error',
+				submission,
+			} as const,
+			{ status: 400 },
+		)
+	}
+	const session = await getSession(request.headers.get('cookie'))
+	const { sessionId } = session.data
+	const wallet = validateWallet(submission.value?.seed, sessionId)
+	if (!wallet) {
+		return json({
+			status: 'error',
+			submission: {
+				...submission,
+				error: {
+					seed: 'Invalid seed provided',
+				},
+			},
+		})
+	}
+
+	const offer = await createOffer(wallet, submission.value)
+	if (offer) {
+		return json(
+			{
+				status: 'success',
+				submission,
+			} as const,
+			{ status: 200 },
+		)
+	}
+
+	return json(
+		{
+			status: 'error',
+			submission: {
+				...submission,
+				error: {
+					// show authorization error as a form level error message.
+					'': 'Something went wrong while Creating an offer. Please try again later',
+				},
+			},
+		} as const,
+		{ status: 400 },
+	)
 }
 
 export default function UserProfile() {
 	const [openSell, setOpenSell] = useState(false)
-	const data = useLoaderData<typeof loader>();
-	console.log('data', data);
+	const [balance, setBalance] = useState<BalanceShape | null>(null)
+	const { accountId } = useLoaderData<typeof loader>()
+	const getBalance = useAccountBalance(accountId)
 	const toggleModal = () => setOpenSell(prev => !prev)
+	const offerFetcher = useFetcher<typeof action>()
+	console.log('balance', balance)
+	useEffect(() => {
+		getBalance(accountId)
+			.then(value => {
+				setBalance(value)
+			})
+			.catch(err => {
+				console.log('err', err)
+			})
+	}, [getBalance, accountId])
+
+	const [form, fields] = useForm({
+		id: 'inline-createOffer',
+		constraint: getFieldsetConstraint(CreateOfferSchema),
+		lastSubmission: offerFetcher.data?.submission,
+		onValidate({ formData }) {
+			return parse(formData, { schema: CreateOfferSchema })
+		},
+		shouldRevalidate: 'onBlur',
+	})
 
 	return (
 		<>
@@ -34,11 +121,11 @@ export default function UserProfile() {
 				</div>
 				<div className="flex items-center justify-between text-center">
 					<div className="w-[45%] border border-white p-3">
-						<h3 className="mb-2 text-h3">Tokens</h3>
+						<h3 className="mb-2 text-h3">Bear Tokens</h3>
 						<div className="flex justify-between">
 							<div className="w-[45%]">
 								<h4 className="text-h4">Available</h4>
-								<div className="text-h5">2000</div>
+								<div className="text-h5">{balance?.total || 0}</div>
 							</div>
 							<div className="w-[45%]">
 								<h4 className="text-h4">On Sale</h4>
@@ -61,7 +148,8 @@ export default function UserProfile() {
 					</div>
 				</div>
 			</div>
-			<div>
+			<div className="mb-3 mt-3 p-10 text-h2">Transactions</div>
+			<div className="pl-10">
 				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 					<div className=" p-4">
 						<h2 className="text-lg font-bold">Item 1</h2>
@@ -92,22 +180,57 @@ export default function UserProfile() {
 
 			<Modal title="Sell Tokens" open={openSell} onClose={toggleModal}>
 				<div className="mt-8">
-					<div className="mb-10">
-						<label htmlFor="tokens" className="block">
-							Number of tokens
-						</label>
-						<input
-							type="number"
-							id="tokens"
-							placeholder="Enter number of tokens to sell"
-							className="h-12 w-full rounded-lg border border-night-400 bg-night-700 px-4 text-body-xs caret-white outline-none focus:border-accent-purple disabled:bg-night-400"
-						/>
-					</div>
-					<div className="flex justify-center">
-						<Button size="sm" variant="primary">
-							SELL
-						</Button>
-					</div>
+					<offerFetcher.Form {...form.props} method="POST" action="/profile">
+						<div className="mb-10">
+							<Field
+								labelProps={{
+									htmlFor: fields.amount.id,
+									children: 'Amount',
+								}}
+								inputProps={conform.input(fields.amount, {
+									type: 'number',
+								})}
+								errors={fields.amount.errors}
+							/>
+
+							<Field
+								labelProps={{
+									htmlFor: fields.xrp.id,
+									children: 'XRP amount/Token',
+								}}
+								inputProps={conform.input(fields.xrp, {
+									type: 'number',
+								})}
+								errors={fields.xrp.errors}
+							/>
+
+							<Field
+								labelProps={{
+									htmlFor: fields.seed.id,
+									children: 'Wallet Seed',
+								}}
+								inputProps={conform.input(fields.seed, {
+									type: 'text',
+								})}
+								errors={fields.seed.errors}
+							/>
+							<ErrorList errors={form.errors} id={form.errorId} />
+						</div>
+						<div className="flex justify-center">
+							<Button
+								size="sm"
+								variant="primary"
+								type="submit"
+								status={
+									offerFetcher.state === 'submitting'
+										? 'pending'
+										: offerFetcher.data?.status ?? 'idle'
+								}
+							>
+								SELL
+							</Button>
+						</div>
+					</offerFetcher.Form>
 				</div>
 			</Modal>
 		</>

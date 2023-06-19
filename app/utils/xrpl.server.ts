@@ -5,6 +5,7 @@ import xrpl, {
 	type TransactionMetadata,
 	type Client,
 	type Wallet,
+	type OfferCreate,
 } from 'xrpl'
 import { Networks } from '@nice-xrpl/react-xrpl'
 import { type Product } from './resource.server'
@@ -31,6 +32,14 @@ const BEAR = stringToHex('BEAR')
 // const REBEAR = stringToHex('REBEAR')
 
 const DOMAIN = '6578616D706C652E636F6D' //example.com
+
+export const validateWallet = (seed: string, accountId: string) => {
+	const wallet = xrpl.Wallet.fromSeed(seed)
+	if (wallet && wallet.address === accountId) {
+		return wallet
+	}
+	return null
+}
 
 export const accountSet = async (client: Client, wallet: Wallet) => {
 	const setAccount: AccountSet = {
@@ -110,7 +119,10 @@ export async function getHotWalletBalance(accountId: string) {
 	})
 	await client.disconnect()
 	const total = balance.result.lines.reduce((acc, curr) => {
-		return acc + Number(curr.balance)
+		if (curr.currency === BEAR) {
+			return acc + Number(curr.balance)
+		}
+		return acc
 	}, 0)
 	return { ...balance, total }
 }
@@ -165,6 +177,58 @@ export async function mintToken(accountId: string, product: Product) {
 	await client.disconnect()
 
 	return pay_result.result
+}
+
+export const createOffer = async (
+	sellerWallet: Wallet,
+	payload: { amount: string; xrp: string },
+) => {
+	const client = xrplClient()
+	await client.connect()
+	const { amount, xrp } = payload
+	const issuerWallet = xrpl.Wallet.fromSeed(process.env.ADMIN_SEED!)
+
+	const TakerGets = {
+		currency: BEAR,
+		issuer: issuerWallet.address,
+		value: amount,
+	}
+
+	const amountToPay = +(+amount * +xrp)
+	// console.log('typeof amountToPay', typeof amountToPay)
+	const value = xrpl.xrpToDrops(amountToPay)
+
+	const TakerPays = {
+		currency: 'XRP',
+		// issuer: issuerWallet.address,
+		// $amount BEAR * $xrp XRP per BEAR * 15% financial exchange (FX) cost
+		value: String(value),
+	}
+
+	
+	const offerCreateTransaction: OfferCreate = {
+		TransactionType: 'OfferCreate',
+		Account: sellerWallet.address,
+		TakerPays,
+		TakerGets,
+	}
+	try {
+		const preparedTransaction = await client.autofill(offerCreateTransaction)
+		const signedTransaction = sellerWallet.sign(preparedTransaction)
+		const result = await client.submitAndWait(signedTransaction.tx_blob)
+		await client.disconnect()
+		console.log('result', result);
+		const resultMeta = result.result.meta as TransactionMetadata
+
+		if (resultMeta.TransactionResult !== 'tesSUCCESS') {
+			return false
+		}
+
+		return result.result
+	} catch (err) {
+		console.log('err', err)
+		return null
+	}
 }
 
 export const createAccount = async () => {

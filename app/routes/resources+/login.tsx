@@ -1,7 +1,7 @@
 import { conform, useForm } from '@conform-to/react'
 import { getFieldsetConstraint, parse } from '@conform-to/zod'
 import { json, redirect, type DataFunctionArgs } from '@remix-run/node'
-import { useFetcher, useActionData } from '@remix-run/react'
+import { useFetcher } from '@remix-run/react'
 import { AuthorizationError } from 'remix-auth'
 import { FormStrategy } from 'remix-auth-form'
 import { z } from 'zod'
@@ -9,13 +9,11 @@ import { authenticator } from '~/utils/auth.server'
 import { Button, ErrorList, Field } from '~/utils/forms'
 import { safeRedirect } from '~/utils/misc'
 import { commitSession, getSession } from '~/utils/session.server'
-import { useCreateAccount } from '~/hooks/use-xrpl'
-import React, { useState } from 'react'
-import AccountInfo from '~/components/AccountInfo'
+import AccountInfo, { type AccountInfoShape } from '~/components/AccountInfo'
 import { createAccount } from '~/utils/xrpl.server'
 
 export const LoginFormSchema = z.object({
-	accountId: z.string(),
+	accountId: z.string().min(1, 'Account ID is required'),
 	redirectTo: z.string().optional(),
 })
 
@@ -96,7 +94,6 @@ export function InlineLogin({
 }) {
 	const loginFetcher = useFetcher<typeof action>()
 	const registerFetcher = useFetcher<typeof action>()
-	const [accountInfo, setAccountInfo] = useState<any>(null)
 
 	const [form, fields] = useForm({
 		id: 'inline-login',
@@ -178,7 +175,11 @@ export function InlineLogin({
 					</registerFetcher.Form>
 				</div>
 			</div>
-			{!!registerFetcher.data && <AccountInfo {...registerFetcher.data} />}
+			{!!registerFetcher.data && (
+				<AccountInfo
+					{...(registerFetcher.data as unknown as AccountInfoShape)}
+				/>
+			)}
 		</div>
 	)
 }
