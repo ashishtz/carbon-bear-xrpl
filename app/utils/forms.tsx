@@ -151,7 +151,7 @@ export function getButtonClassName({
 	variant: 'primary' | 'secondary' | 'none'
 }) {
 	const baseClassName =
-		'flex justify-center items-center rounded-full font-bold outline-none transition-[background-color,color] duration-200 disabled:bg-night-500 disabled:text-night-200'
+		'flex justify-center items-center rounded-full font-bold outline-none transition-[background-color,color] duration-200 disabled:bg-night-500 disabled:text-night-200 disabled:cursor-not-allowed'
 	const primaryClassName =
 		'bg-accent-purple hover:bg-accent-yellow hover:text-night-700 focus:bg-accent-yellow focus:text-night-700 active:bg-accent-yellow-muted'
 	const secondaryClassName =

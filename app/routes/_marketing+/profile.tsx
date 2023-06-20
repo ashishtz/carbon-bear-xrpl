@@ -9,7 +9,12 @@ import { Button, ErrorList, Field } from '~/utils/forms'
 import Modal from '~/components/modal'
 import { requireAuthenticated } from '~/utils/auth.server'
 import { getSession } from '~/utils/session.server'
-import { type BalanceShape, useAccountBalance } from '~/hooks/use-xrpl'
+import {
+	type BalanceShape,
+	useAccountBalance,
+	useSellOffers,
+	BEAR,
+} from '~/hooks/use-xrpl'
 import { createOffer, validateWallet } from '~/utils/xrpl.server'
 
 export const CreateOfferSchema = z.object({
@@ -22,7 +27,8 @@ export async function loader({ request }: DataFunctionArgs) {
 	await requireAuthenticated(request)
 	const session = await getSession(request.headers.get('cookie'))
 	const { sessionId } = session.data
-	return { accountId: sessionId }
+	const adminId = process.env.ADMIN_ACCOUNT_ID
+	return { accountId: sessionId, adminId }
 }
 
 export async function action({ request }: DataFunctionArgs) {
@@ -74,32 +80,57 @@ export async function action({ request }: DataFunctionArgs) {
 			submission: {
 				...submission,
 				error: {
-					// show authorization error as a form level error message.
 					'': 'Something went wrong while Creating an offer. Please try again later',
 				},
 			},
 		} as const,
-		{ status: 400 },
+		{ status: 500 },
 	)
 }
 
 export default function UserProfile() {
 	const [openSell, setOpenSell] = useState(false)
 	const [balance, setBalance] = useState<BalanceShape | null>(null)
-	const { accountId } = useLoaderData<typeof loader>()
+	const [tokensOnSell, setTokensOnSell] = useState(0)
+	const { accountId, adminId } = useLoaderData<typeof loader>()
 	const getBalance = useAccountBalance(accountId)
 	const toggleModal = () => setOpenSell(prev => !prev)
 	const offerFetcher = useFetcher<typeof action>()
-	console.log('balance', balance)
+	const getOnSale = useSellOffers()
+
+	useEffect(() => {
+		if (offerFetcher.data?.status === 'success') {
+			setTimeout(() => {
+				setOpenSell(false)
+			}, 500)
+		}
+	}, [offerFetcher.data?.status, setOpenSell])
+
 	useEffect(() => {
 		getBalance(accountId)
-			.then(value => {
-				setBalance(value)
+			.then(bal => {
+				console.log('bal', bal);
+				return setBalance(bal)
+			})
+			.then(() => getOnSale(adminId!, accountId))
+			.then(offers => {
+				const onSale = offers.buy.reduce((acc, curr) => {
+					const takerGets = curr.TakerGets
+					if (
+						curr.Account === accountId &&
+						(takerGets?.currency || 'XRP') === BEAR
+					) {
+						return acc + +(takerGets.value || 0)
+					}
+					return acc
+				}, 0)
+
+				setTokensOnSell(onSale)
 			})
 			.catch(err => {
 				console.log('err', err)
 			})
-	}, [getBalance, accountId])
+	}, [getBalance, accountId, getOnSale, adminId, setTokensOnSell])
 
 	const [form, fields] = useForm({
 		id: 'inline-createOffer',
@@ -116,7 +147,7 @@ export default function UserProfile() {
 			<div className="p-10">
 				<div className="mb-4 flex justify-end">
 					<Button size="sm" variant="primary" onClick={toggleModal}>
-						SELL
+						CREATE OFFER
 					</Button>
 				</div>
 				<div className="flex items-center justify-between text-center">
@@ -129,16 +160,16 @@ export default function UserProfile() {
 							</div>
 							<div className="w-[45%]">
 								<h4 className="text-h4">On Sale</h4>
-								<div className="text-h5">2000</div>
+								<div className="text-h5">{tokensOnSell}</div>
 							</div>
 						</div>
 					</div>
 					<div className="w-[45%] border border-white  p-3">
-						<h3 className="mb-2 text-h3">Income</h3>
+						<h3 className="mb-2 text-h3">XRP</h3>
 						<div className="flex justify-between">
 							<div className="w-[45%]">
-								<h4 className="text-h4">Pending</h4>
-								<div className="text-h5">$2,000</div>
+								<h4 className="text-h4">Current</h4>
+								<div className="text-h5">{balance?.xrp || 0}</div>
 							</div>
 							<div className="w-[45%]">
 								<h4 className="text-h4">Earned</h4>
@@ -210,7 +241,7 @@ export default function UserProfile() {
 									children: 'Wallet Seed',
 								}}
 								inputProps={conform.input(fields.seed, {
-									type: 'text',
+									type: 'password',
 								})}
 								errors={fields.seed.errors}
 							/>
@@ -227,7 +258,7 @@ export default function UserProfile() {
 										: offerFetcher.data?.status ?? 'idle'
 								}
 							>
-								SELL
+								CREATE
 							</Button>
 						</div>
 					</offerFetcher.Form>

@@ -1,10 +1,10 @@
 import { useCallback } from 'react'
 import { useXRPLClient, useCreateWallet } from '@nice-xrpl/react-xrpl'
-import xrpl, { type AccountLinesResponse } from 'xrpl'
-import { BaseResponse } from 'xrpl/dist/npm/models/methods/baseMethod'
+import { type AccountLinesResponse } from 'xrpl'
 
 export interface BalanceShape extends AccountLinesResponse {
 	total: number
+	xrp: string
 }
 
 const stringToHex = (str: string) => {
@@ -20,7 +20,7 @@ const stringToHex = (str: string) => {
 	return hex
 }
 
-const BEAR = stringToHex('BEAR')
+export const BEAR = stringToHex('BEAR')
 // const REBEAR = stringToHex('REBEAR')
 
 export const useGetAccount = () => {
@@ -48,7 +48,7 @@ export function useCreateAccount() {
 	const getAccount = useGetAccount()
 
 	const create = useCallback(async () => {
-		const fund_result = await createWallet('20')
+		const fund_result = await createWallet('2000000000000000')
 		const wallet = fund_result.wallet
 		const account = await getAccount(wallet.address)
 		return { account, wallet }
@@ -69,6 +69,7 @@ export function useAccountBalance(accountId: string) {
 				ledger_index: 'validated',
 			})
 
+			const xrp = await client.getXrpBalance(accountId)
 			await client.disconnect()
 			const total = balance.result.lines.reduce((acc, curr) => {
 				if (curr.currency === BEAR) {
@@ -76,7 +77,7 @@ export function useAccountBalance(accountId: string) {
 				}
 				return acc
 			}, 0)
-			return { ...balance, total }
+			return { ...balance, total, xrp }
 		},
 		[client],
 	)
@@ -84,34 +85,24 @@ export function useAccountBalance(accountId: string) {
 	return getBalance
 }
 
-export const useCreateSellOffer = () => {
+export const useSellOffers = () => {
 	const client = useXRPLClient()
 
-	const createOffer = useCallback(
-		async (accountId: string) => {
+	const offers = useCallback(
+		async (issuer: string, taker: string = '') => {
 			await client.connect()
-			const offerCreateTransaction = {
-				TransactionType: 'OfferCreate',
-				Account: accountId,
-				TakerPays: {
-					currency: 'USD',
-					issuer: '<issuer-address-to-sell>',
-					value: '<amount-to-sell>',
-				},
-				TakerGets: {
-					currency: '<currency-code-to-buy>',
-					issuer: '<issuer-address-to-buy>',
-					value: '<amount-to-buy>',
-				},
-			}
-
+			const offers = await client.getOrderbook(
+				{ currency: 'XRP' },
+				{ currency: BEAR, issuer },
+				taker ? { taker } : {},
+			)
 			await client.disconnect()
-			return offerCreateTransaction
+			return offers
 		},
 		[client],
 	)
 
-	return createOffer
+	return offers
 }
 
 // export const useLookupOffers = () => {
@@ -124,7 +115,7 @@ export const useCreateSellOffer = () => {
 // 				issuer: issuer,
 // 				value: amount,
 // 			}
-			
+
 // 			const we_spend = {
 // 				currency: 'XRP',
 // 				// 25 TST * 10 USD per TST * 15% financial exchange (FX) cost

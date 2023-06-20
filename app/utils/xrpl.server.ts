@@ -127,23 +127,6 @@ export async function getHotWalletBalance(accountId: string) {
 	return { ...balance, total }
 }
 
-export async function getColdWalletBalance(
-	accountId: string,
-	recepientAccountId: string,
-) {
-	const client = xrplClient()
-	await client.connect()
-
-	const balance = await client.request({
-		command: 'gateway_balances',
-		account: accountId,
-		ledger_index: 'validated',
-		hotwallet: [recepientAccountId],
-	})
-	await client.disconnect()
-	return balance
-}
-
 export async function mintToken(accountId: string, product: Product) {
 	const client = xrplClient()
 	await client.connect()
@@ -171,7 +154,7 @@ export async function mintToken(accountId: string, product: Product) {
 	const payresultMeta = pay_result.result.meta as TransactionMetadata
 
 	if (payresultMeta.TransactionResult !== 'tesSUCCESS') {
-		return false
+		return null
 	}
 
 	await client.disconnect()
@@ -194,34 +177,101 @@ export const createOffer = async (
 		value: amount,
 	}
 
-	const amountToPay = +(+amount * +xrp)
-	// console.log('typeof amountToPay', typeof amountToPay)
-	const value = xrpl.xrpToDrops(amountToPay)
+	const TakerPays = xrpl.xrpToDrops(+amount * +xrp)
 
-	const TakerPays = {
-		currency: 'XRP',
-		// issuer: issuerWallet.address,
-		// $amount BEAR * $xrp XRP per BEAR * 15% financial exchange (FX) cost
-		value: String(value),
-	}
-
-	
 	const offerCreateTransaction: OfferCreate = {
 		TransactionType: 'OfferCreate',
 		Account: sellerWallet.address,
 		TakerPays,
 		TakerGets,
 	}
+
 	try {
 		const preparedTransaction = await client.autofill(offerCreateTransaction)
 		const signedTransaction = sellerWallet.sign(preparedTransaction)
 		const result = await client.submitAndWait(signedTransaction.tx_blob)
 		await client.disconnect()
-		console.log('result', result);
 		const resultMeta = result.result.meta as TransactionMetadata
 
 		if (resultMeta.TransactionResult !== 'tesSUCCESS') {
-			return false
+			return null
+		}
+
+		return result.result
+	} catch (err) {
+		console.log('err', err)
+		return null
+	}
+}
+
+export const createSellOffer = async (
+	sellerWallet: Wallet,
+	payload: { bear: string; xrp: string },
+) => {
+	const client = xrplClient()
+	await client.connect()
+	const { bear, xrp } = payload
+	const issuerWallet = xrpl.Wallet.fromSeed(process.env.ADMIN_SEED!)
+
+	const TakerPays = {
+		currency: BEAR,
+		issuer: issuerWallet.address,
+		value: bear,
+	}
+
+	const TakerGets = xrpl.xrpToDrops(+bear * +xrp)
+
+	const offerCreateTransaction: OfferCreate = {
+		TransactionType: 'OfferCreate',
+		Account: sellerWallet.address,
+		TakerPays,
+		TakerGets,
+	}
+
+	try {
+		const preparedTransaction = await client.autofill(offerCreateTransaction)
+		const signedTransaction = sellerWallet.sign(preparedTransaction)
+		const result = await client.submitAndWait(signedTransaction.tx_blob)
+		await client.disconnect()
+		const resultMeta = result.result.meta as TransactionMetadata
+
+		if (resultMeta.TransactionResult !== 'tesSUCCESS') {
+			return null
+		}
+
+		return result.result
+	} catch (err) {
+		console.log('err', err)
+		return null
+	}
+}
+
+export const acceptOffer = async (
+	wallet: Wallet,
+	payload: {
+		sequence: string
+	},
+) => {
+	const client = xrplClient()
+	await client.connect()
+
+	const address = wallet.classicAddress
+	const { sequence } = payload
+
+	const transaction = {
+		TransactionType: 'OfferAccept',
+		Account: address,
+		OfferSequence: sequence,
+	}
+	try {
+		const preparedTransaction = await client.autofill(transaction)
+		const signedTransaction = wallet.sign(preparedTransaction)
+		const result = await client.submitAndWait(signedTransaction.tx_blob)
+
+		const resultMeta = result.result.meta as TransactionMetadata
+
+		if (resultMeta.TransactionResult !== 'tesSUCCESS') {
+			return null
 		}
 
 		return result.result
