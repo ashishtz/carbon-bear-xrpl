@@ -105,36 +105,22 @@ export const useSellOffers = () => {
 	return offers
 }
 
-// export const useLookupOffers = () => {
-// 	const client = useXRPLClient()
-// 	const offers = useCallback(
-// 		async (issuer: string, seller: string, amount: string): Promise<BaseResponse> => {
-// 			await client.connect()
-// 			const we_want = {
-// 				currency: BEAR,
-// 				issuer: issuer,
-// 				value: amount,
-// 			}
+export const useBuyerOffers = () => {
+	const client = useXRPLClient()
 
-// 			const we_spend = {
-// 				currency: 'XRP',
-// 				// 25 TST * 10 USD per TST * 15% financial exchange (FX) cost
-// 				value: xrpl.xrpToDrops(+amount * 10 * 1.15),
-// 			}
-// 			const orderbook_resp = await client.request({
-// 				command: 'book_offers',
-// 				taker: seller,
-// 				ledger_index: 'current',
-// 				taker_gets: we_want,
-// 				taker_pays: we_spend,
-// 			})
+	const offers = useCallback(
+		async (issuer: string, taker: string = '') => {
+			await client.connect()
+			const offers = await client.getOrderbook(
+				{ currency: BEAR, issuer },
+				{ currency: 'XRP' },
+				taker ? { taker } : {},
+			)
+			await client.disconnect()
+			return offers
+		},
+		[client],
+	)
 
-// 			await client.disconnect();
-
-// 			return orderbook_resp
-// 		},
-// 		[client],
-// 	)
-
-// 	return offers
-// }
+	return offers
+}

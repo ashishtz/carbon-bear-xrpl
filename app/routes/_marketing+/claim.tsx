@@ -22,7 +22,7 @@ export default function UserProfile() {
 							className="h-[40rem] w-[40rem] border border-white pb-2 cursor-pointer"
 							key={product.name}
 							onClick={() => {
-								navigate(`/products/${product.id}`)
+								navigate(`/claim/${product.id}`)
 							}}
 						>
 							<div className="flex items-center justify-evenly bg-white">

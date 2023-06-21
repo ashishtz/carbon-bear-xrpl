@@ -109,7 +109,6 @@ export default function UserProfile() {
 	useEffect(() => {
 		getBalance(accountId)
 			.then(bal => {
-				console.log('bal', bal);
 				return setBalance(bal)
 			})
 			.then(() => getOnSale(adminId!, accountId))
@@ -147,7 +146,7 @@ export default function UserProfile() {
 			<div className="p-10">
 				<div className="mb-4 flex justify-end">
 					<Button size="sm" variant="primary" onClick={toggleModal}>
-						CREATE OFFER
+						Create Sell Offer
 					</Button>
 				</div>
 				<div className="flex items-center justify-between text-center">
@@ -166,14 +165,10 @@ export default function UserProfile() {
 					</div>
 					<div className="w-[45%] border border-white  p-3">
 						<h3 className="mb-2 text-h3">XRP</h3>
-						<div className="flex justify-between">
+						<div className="flex justify-center">
 							<div className="w-[45%]">
-								<h4 className="text-h4">Current</h4>
+								<h4 className="text-h4 h-8"></h4>
 								<div className="text-h5">{balance?.xrp || 0}</div>
-							</div>
-							<div className="w-[45%]">
-								<h4 className="text-h4">Earned</h4>
-								<div className="text-h5">$2,000</div>
 							</div>
 						</div>
 					</div>
@@ -209,14 +204,14 @@ export default function UserProfile() {
 				</div>
 			</div>
 
-			<Modal title="Sell Tokens" open={openSell} onClose={toggleModal}>
+			<Modal title="Sell Tokens Offer" open={openSell} onClose={toggleModal}>
 				<div className="mt-8">
 					<offerFetcher.Form {...form.props} method="POST" action="/profile">
 						<div className="mb-10">
 							<Field
 								labelProps={{
 									htmlFor: fields.amount.id,
-									children: 'Amount',
+									children: 'Bear Token Amount',
 								}}
 								inputProps={conform.input(fields.amount, {
 									type: 'number',
@@ -227,7 +222,7 @@ export default function UserProfile() {
 							<Field
 								labelProps={{
 									htmlFor: fields.xrp.id,
-									children: 'XRP amount/Token',
+									children: 'XRP Amount/Token',
 								}}
 								inputProps={conform.input(fields.xrp, {
 									type: 'number',
@@ -241,7 +236,7 @@ export default function UserProfile() {
 									children: 'Wallet Seed',
 								}}
 								inputProps={conform.input(fields.seed, {
-									type: 'password',
+									type: 'text',
 								})}
 								errors={fields.seed.errors}
 							/>

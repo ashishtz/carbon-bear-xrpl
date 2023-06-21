@@ -73,7 +73,7 @@ export async function getUserId(request: Request) {
 
 export async function requireAnonymous(request: Request) {
 	await authenticator.isAuthenticated(request, {
-		successRedirect: '/marketplace',
+		successRedirect: '/home',
 	})
 }
 

@@ -61,7 +61,7 @@ export const meta: V2_MetaFunction = () => {
 export async function loader({ request }: DataFunctionArgs) {
 	const session = await getSession(request.headers.get('cookie'))
 
-	const isAuthenticated = session?.data?.sessionId || false
+	const isAuthenticated = !!session?.data?.sessionId || false
 	return json({ ENV: getEnv(), isAuthenticated })
 }
 

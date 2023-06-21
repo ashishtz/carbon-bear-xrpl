@@ -5,14 +5,24 @@ import { useMemo } from 'react'
 
 const tabs = [
 	{
-		title: 'Market',
-		path: '/marketplace',
-		match: 'marketplace',
+		title: 'Claim',
+		path: '/claim',
+		match: 'claim',
 	},
 	{
-		title: 'Products',
-		path: '/products',
-		match: 'products',
+		title: 'Buy',
+		path: '/buy',
+		match: 'buy',
+	},
+	{
+		title: 'Sell',
+		path: '/sell',
+		match: 'sell',
+	},
+	{
+		title: 'AMM',
+		path: '/amm',
+		match: 'amm',
 	},
 	{
 		title: 'Profile',
@@ -20,10 +30,6 @@ const tabs = [
 		match: 'profile',
 	},
 ]
-
-const activePathStyle = {
-	fontWeight: 'bold',
-}
 
 const Header = () => {
 	const { pathname } = useLocation()
@@ -35,6 +41,9 @@ const Header = () => {
 	return (
 		<div className="flex items-center justify-between bg-accent-purple p-1 shadow-sm">
 			<div className="flex">
+				<div className="mx-4 flex items-center text-body-lg font-extrabold">
+					<Link to="/home">Carbon Bear</Link>
+				</div>
 				{tabs.map(tab => (
 					<ButtonLink
 						key={`header-${tab.match}`}

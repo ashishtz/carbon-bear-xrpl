@@ -11,14 +11,14 @@ import Modal from '~/components/modal'
 import { requireAuthenticated } from '~/utils/auth.server'
 import { useSellOffers } from '~/hooks/use-xrpl'
 import { getSession } from '~/utils/session.server'
-import { createSellOffer, validateWallet } from '~/utils/xrpl.server'
+import { createOffer, validateWallet } from '~/utils/xrpl.server'
+import ListView from '~/components/ListView'
 
 export const CreateOfferSchema = z.object({
 	seed: z.string().min(1, 'Account seed is required'),
-	xrp: z.string().min(1, 'Amount is required'),
-	bear: z.string().min(1, 'XRP Amount is required'),
+	amount: z.string().min(1, 'Amount is required'),
+	xrp: z.string().min(1, 'XRP Amount is required'),
 })
-
 export async function loader({ request }: DataFunctionArgs) {
 	await requireAuthenticated(request)
 
@@ -62,7 +62,7 @@ export async function action({ request }: DataFunctionArgs) {
 		})
 	}
 
-	const offer = await createSellOffer(wallet, submission.value)
+	const offer = await createOffer(wallet, submission.value)
 	if (offer) {
 		return json(
 			{
@@ -87,36 +87,41 @@ export async function action({ request }: DataFunctionArgs) {
 	)
 }
 
-export default function MarketPlace() {
-	const [openBuy, setOpenBuy] = useState(false)
-	const [tokensToSell, setTokensToSell] = useState(0)
+export default function Sell() {
+	const [openSell, setOpenSell] = useState(false)
+	const [buyerOffers, setBuyerOffers] = useState<BookOffer[]>([])
 	const data = useLoaderData<typeof loader>()
-	const getOffers = useSellOffers()
+	const getSellerOffers = useSellOffers()
 	const offerFetcher = useFetcher<typeof action>()
 
-	useEffect(() => {
-		getOffers(data.issuer!).then(offers => {
-			console.log('offers', offers);
-			setTokensToSell(
-				offers.buy.reduce((acc, curr) => {
-					return acc + (+curr.TakerGets?.value || 0)
-				}, 0),
+	const handleOffers = useCallback(
+		(offers: BookOffer[]) => {
+			setBuyerOffers(
+				offers.filter(offer => typeof offer.TakerGets === 'string'),
 			)
+		},
+		[setBuyerOffers],
+	)
+
+	useEffect(() => {
+		getSellerOffers(data.issuer!).then(offers => {
+			handleOffers(offers.buy)
+			return true
 		})
-	}, [getOffers, data, setTokensToSell])
+	}, [getSellerOffers, data, handleOffers])
 
 	useEffect(() => {
 		if (offerFetcher.data?.status === 'success') {
 			setTimeout(() => {
-				setOpenBuy(false)
+				setOpenSell(false)
 			}, 500)
 		}
-	}, [offerFetcher.data?.status, setOpenBuy])
+	}, [offerFetcher.data?.status, setOpenSell])
 
-	const toggleModal = () => setOpenBuy(prev => !prev)
+	const toggleModal = () => setOpenSell(prev => !prev)
 
 	const [form, fields] = useForm({
-		id: 'inline-acceptOffer',
+		id: 'inline-create-sell-offer',
 		constraint: getFieldsetConstraint(CreateOfferSchema),
 		lastSubmission: offerFetcher.data?.submission,
 		onValidate({ formData }) {
@@ -127,35 +132,49 @@ export default function MarketPlace() {
 
 	return (
 		<>
-			<div className="flex min-h-full flex-col pb-10 pt-10">
+			<div className="my-5 flex w-full justify-end pr-5 text-center">
+				<Button size="sm" variant="primary" onClick={toggleModal}>
+					Create Sell Offer
+				</Button>
+			</div>
+			<div className="flex min-h-full pb-10 pt-10 md:flex-wrap">
 				<div className="mx-auto h-full w-full max-w-3xl">
-					<div className="flex h-[90vh] flex-col justify-between gap-2 border border-white p-7 text-center">
-						<div>
-							<div className="text-6xl font-black">On Sale</div>
-							<div className="mt-5 text-2xl font-semibold">
-								{tokensToSell} Bear Tokens
-							</div>
+					<div className="flex h-[90vh] flex-col gap-2 border border-white p-7 text-center">
+						<div className="mb-5">
+							<div className="text-5xl font-black">Buy Offers</div>
 						</div>
-						<div className="flex w-full justify-center text-center">
-							<Button size="md" variant="primary" onClick={toggleModal}>
-								BUY
-							</Button>
+						<div>
+							<ListView
+								type="seller"
+								records={buyerOffers}
+								accountid={data.accountId}
+								onChange={rec => {
+									console.log('rec', rec)
+								}}
+							/>
 						</div>
 					</div>
 				</div>
 			</div>
-			<Modal title="Buy Tokens" open={openBuy} onClose={toggleModal}>
+			<Modal title="Sell Tokens Offer" open={openSell} onClose={toggleModal}>
 				<div className="mt-8">
-					<offerFetcher.Form
-						{...form.props}
-						method="POST"
-						action="/marketplace"
-					>
+					<offerFetcher.Form {...form.props} method="POST" action="/profile">
 						<div className="mb-10">
 							<Field
 								labelProps={{
+									htmlFor: fields.amount.id,
+									children: 'Bear Token Amount',
+								}}
+								inputProps={conform.input(fields.amount, {
+									type: 'number',
+								})}
+								errors={fields.amount.errors}
+							/>
+
+							<Field
+								labelProps={{
 									htmlFor: fields.xrp.id,
-									children: 'XRP Per Token',
+									children: 'XRP Amount/Token',
 								}}
 								inputProps={conform.input(fields.xrp, {
 									type: 'number',
@@ -165,22 +184,11 @@ export default function MarketPlace() {
 
 							<Field
 								labelProps={{
-									htmlFor: fields.bear.id,
-									children: 'Bear Tokens',
-								}}
-								inputProps={conform.input(fields.bear, {
-									type: 'number',
-								})}
-								errors={fields.bear.errors}
-							/>
-
-							<Field
-								labelProps={{
 									htmlFor: fields.seed.id,
 									children: 'Wallet Seed',
 								}}
 								inputProps={conform.input(fields.seed, {
-									type: 'password',
+									type: 'text',
 								})}
 								errors={fields.seed.errors}
 							/>
