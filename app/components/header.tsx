@@ -50,7 +50,7 @@ const Header = () => {
 						style={{
 							borderRadius: 'unset',
 							padding: '1.25rem',
-							...(activePath === tab.match
+							...(activePath.startsWith(tab.match)
 								? {
 										fontWeight: 'bold',
 								  }

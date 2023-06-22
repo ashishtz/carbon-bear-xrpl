@@ -13,6 +13,7 @@ import { useSellOffers } from '~/hooks/use-xrpl'
 import { getSession } from '~/utils/session.server'
 import { createOffer, validateWallet } from '~/utils/xrpl.server'
 import ListView from '~/components/ListView'
+import { AcceptOffer } from '../resources+/accept-offer'
 
 export const CreateOfferSchema = z.object({
 	seed: z.string().min(1, 'Account seed is required'),
@@ -93,22 +94,22 @@ export default function Sell() {
 	const data = useLoaderData<typeof loader>()
 	const getSellerOffers = useSellOffers()
 	const offerFetcher = useFetcher<typeof action>()
+	const [showDesc, setShowDesc] = useState(false)
+	const [offer, setOffer] = useState<BookOffer>({})
+	const [acceptOpen, setAcceptOpen] = useState(false)
 
-	const handleOffers = useCallback(
-		(offers: BookOffer[]) => {
-			setBuyerOffers(
-				offers.filter(offer => typeof offer.TakerGets === 'string'),
-			)
-		},
-		[setBuyerOffers],
-	)
-
-	useEffect(() => {
+	const handleOffers = useCallback(() => {
 		getSellerOffers(data.issuer!).then(offers => {
-			handleOffers(offers.buy)
+			setBuyerOffers(
+				offers.buy.filter(offer => typeof offer.TakerGets === 'string'),
+			)
 			return true
 		})
-	}, [getSellerOffers, data, handleOffers])
+	}, [setBuyerOffers, getSellerOffers, data.issuer])
+
+	useEffect(() => {
+		handleOffers()
+	}, [handleOffers])
 
 	useEffect(() => {
 		if (offerFetcher.data?.status === 'success') {
@@ -132,6 +133,80 @@ export default function Sell() {
 
 	return (
 		<>
+			<div className="px-4 py-8">
+				<span
+					onClick={() => {
+						setShowDesc(prev => !prev)
+					}}
+					className="cursor-pointer text-lg text-white"
+					title="Page Information"
+				>
+					&#9432; Page Explaination
+				</span>
+				{showDesc && (
+					<div className="container mx-auto">
+						<p className="mb-6 mt-4">
+							Welcome to the Sell page, designed specifically for individuals
+							who are purchasing carbon-reducing products, verifying their
+							purchases through our app, and receiving CARBON tokens. This
+							platform provides an opportunity for users to sell their tokens,
+							ensuring a seamless experience. Similar to buyers, sellers have
+							two options for selling their tokens.
+						</p>
+						<p className="mb-6">
+							The first option is to browse through the list of offers created
+							by buyers within the app and accept any of those offers. By
+							selecting the "Accept" button, a popup window will appear,
+							prompting sellers to enter their Seed ID. This Seed ID is the same
+							identifier they received during their account creation process. By
+							providing this ID, the request will be sent to the server, which
+							will then facilitate the transaction, converting their tokens into
+							XRP currency.
+						</p>
+						<p className="mb-2 mt-8">
+							Alternatively, if sellers do not wish to accept any of the buyer's
+							offers, they can create their own sell offer by clicking the
+							"Create Sell Offer" button on this page. Upon clicking the button,
+							a popup window will appear with three input fields.
+						</p>
+						<ol className="mb-8 list-decimal pl-6">
+							<li>
+								Bear Token Amount: In this field, sellers can specify the
+								quantity of tokens they wish to sell.
+							</li>
+							<li>
+								XRP Amount/Token: Here, sellers can indicate the desired amount
+								of XRP they would like to receive for each BEAR token.
+							</li>
+							<li>
+								Wallet Seed: Sellers will provide the Seed ID of their account
+								in this field. It's important to note that, for demo purposes,
+								this request is being passed to the server. However, in the
+								actual implementation, security measures will be implemented to
+								ensure the protection of transaction-related information, and no
+								sensitive data will be sent to the server.
+							</li>
+						</ol>
+						<p className="mb-2 mt-8">
+							Upon submitting the form, the server will create the new sell
+							offer, which will be listed on the "Buy" page. Transactions on
+							this platform are automated, ensuring a streamlined process. If a
+							seller's sell offer is more favorable (i.e., cheaper) than any of
+							the buyer's offers, the transaction will be executed
+							automatically, and the sellers will receive XRP currency as a
+							result.
+						</p>
+						<p className="mb-2 mt-8">
+							We strive to provide an efficient and user-friendly platform,
+							where sellers can explore available offers or create their own,
+							while benefiting from the automatic transaction process. Rest
+							assured that security measures will be implemented to safeguard
+							sensitive information in the actual implementation of the
+							platform.
+						</p>
+					</div>
+				)}
+			</div>
 			<div className="my-5 flex w-full justify-end pr-5 text-center">
 				<Button size="sm" variant="primary" onClick={toggleModal}>
 					Create Sell Offer
@@ -149,7 +224,8 @@ export default function Sell() {
 								records={buyerOffers}
 								accountid={data.accountId}
 								onChange={rec => {
-									console.log('rec', rec)
+									setOffer(rec)
+									setAcceptOpen(true)
 								}}
 							/>
 						</div>
@@ -211,6 +287,17 @@ export default function Sell() {
 					</offerFetcher.Form>
 				</div>
 			</Modal>
+			<AcceptOffer
+				isOpen={acceptOpen}
+				onAccepted={() => {
+					handleOffers()
+					setAcceptOpen(false)
+				}}
+				offer={offer}
+				toggle={() => {
+					setAcceptOpen(prev => !prev)
+				}}
+			/>
 		</>
 	)
 }

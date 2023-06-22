@@ -255,13 +255,14 @@ export const acceptOffer = async (
 	const client = xrplClient()
 	await client.connect()
 
-	const address = wallet.classicAddress
+	const address = wallet.address
 	const { sequence } = payload
 
 	const transaction = {
 		TransactionType: 'OfferAccept',
 		Account: address,
 		OfferSequence: sequence,
+		LastLedgerSequence: 0,
 	}
 	try {
 		const preparedTransaction = await client.autofill(transaction)
@@ -285,7 +286,7 @@ export const createAccount = async () => {
 	const client = xrplClient()
 	await client.connect()
 
-	const wallet = await client.fundWallet(null, { amount: '20' })
+	const wallet = await client.fundWallet(null, { amount: '200000' })
 	const account = await client.request({
 		command: 'account_info',
 		account: wallet.wallet.address,

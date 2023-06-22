@@ -1,10 +1,9 @@
-import { useCallback } from 'react'
 import { type BookOffer } from 'xrpl'
 import { Button } from '~/utils/forms'
 
 interface ListViewShape {
 	records: BookOffer[]
-	onChange: (sequence: number) => void
+	onChange: (record: BookOffer) => void
 	accountid: string
 	type: 'seller' | 'buyer'
 }
@@ -15,10 +14,6 @@ const ListView = ({
 	accountid,
 	type = 'buyer',
 }: ListViewShape) => {
-	const convertToDrops = useCallback(val => {
-		return Number(val) / 1000000
-	}, [])
-
 	return (
 		<>
 			<div className="ml-7 mr-7 mt-7 flex justify-between text-sm font-extrabold">
@@ -51,7 +46,7 @@ const ListView = ({
 								variant="secondary"
 								size="xs"
 								onClick={() => {
-									onChange(record.Sequence)
+									onChange(record)
 								}}
 								disabled={record.Account === accountid}
 							>

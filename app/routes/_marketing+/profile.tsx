@@ -92,6 +92,7 @@ export default function UserProfile() {
 	const [openSell, setOpenSell] = useState(false)
 	const [balance, setBalance] = useState<BalanceShape | null>(null)
 	const [tokensOnSell, setTokensOnSell] = useState(0)
+	const [showDesc, setShowDesc] = useState(false)
 	const { accountId, adminId } = useLoaderData<typeof loader>()
 	const getBalance = useAccountBalance(accountId)
 	const toggleModal = () => setOpenSell(prev => !prev)
@@ -143,6 +144,45 @@ export default function UserProfile() {
 
 	return (
 		<>
+			<div className="px-4 py-8">
+				<span
+					onClick={() => {
+						setShowDesc(prev => !prev)
+					}}
+					className="cursor-pointer text-lg text-white"
+					title="Page Information"
+				>
+					&#9432; Page Explaination
+				</span>
+				{showDesc && (
+					<div className="container mx-auto">
+						<p className="mb-6 mt-4">
+							Welcome to the Profile page, a central hub for both sellers and
+							buyers. Here, users can conveniently access important information
+							related to their account and transactions.
+						</p>
+						<p className="mb-2">
+							On this page, users can view the quantity of BEAR tokens they
+							currently possess, providing them with an overview of their token
+							holdings. Additionally, they can also see the amount of BEAR
+							tokens they have listed for sale, allowing for easy monitoring of
+							their selling activities.
+						</p>
+						<p className="mb-2">
+							Furthermore, users can readily check the XRP balance of their
+							account, providing a clear understanding of their available XRP
+							funds.
+						</p>
+						<p className="mb-2">
+							Please note that the current implementation of the Profile page is
+							a basic version, aimed at providing essential functionality. In
+							the future, we have plans to enhance this page by introducing a
+							comprehensive list of user transactions and additional details,
+							further enriching the user experience.
+						</p>
+					</div>
+				)}
+			</div>
 			<div className="p-10">
 				<div className="mb-4 flex justify-end">
 					<Button size="sm" variant="primary" onClick={toggleModal}>
@@ -167,39 +207,10 @@ export default function UserProfile() {
 						<h3 className="mb-2 text-h3">XRP</h3>
 						<div className="flex justify-center">
 							<div className="w-[45%]">
-								<h4 className="text-h4 h-8"></h4>
+								<h4 className="h-8 text-h4"></h4>
 								<div className="text-h5">{balance?.xrp || 0}</div>
 							</div>
 						</div>
-					</div>
-				</div>
-			</div>
-			<div className="mb-3 mt-3 p-10 text-h2">Transactions</div>
-			<div className="pl-10">
-				<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 1</h2>
-						<p>Description of Item 1</p>
-					</div>
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 2</h2>
-						<p>Description of Item 2</p>
-					</div>
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 3</h2>
-						<p>Description of Item 3</p>
-					</div>
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 4</h2>
-						<p>Description of Item 4</p>
-					</div>
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 5</h2>
-						<p>Description of Item 5</p>
-					</div>
-					<div className=" p-4">
-						<h2 className="text-lg font-bold">Item 6</h2>
-						<p>Description of Item 6</p>
 					</div>
 				</div>
 			</div>
