@@ -143,7 +143,7 @@ const ProductDetails = () => {
 					<h3 className="text-h2">{product.name}</h3>
 					<div className="mt-16">
 						<label className="text-h4">Carbon Reduction: </label>
-						<span className="text-h5">{product.carbon}</span>
+						<span className="text-h5">{product.carbon} grams</span>
 					</div>
 					<div className="mt-12">{product.description}</div>
 					<div className="mt-12">

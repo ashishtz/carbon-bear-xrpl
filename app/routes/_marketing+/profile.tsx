@@ -14,6 +14,7 @@ import {
 	useAccountBalance,
 	useSellOffers,
 	BEAR,
+	useXrpValue,
 } from '~/hooks/use-xrpl'
 import { createOffer, validateWallet } from '~/utils/xrpl.server'
 
@@ -98,6 +99,8 @@ export default function UserProfile() {
 	const toggleModal = () => setOpenSell(prev => !prev)
 	const offerFetcher = useFetcher<typeof action>()
 	const getOnSale = useSellOffers()
+	const usd = useXrpValue()
+
 
 	useEffect(() => {
 		if (offerFetcher.data?.status === 'success') {
@@ -215,10 +218,24 @@ export default function UserProfile() {
 				</div>
 			</div>
 
-			<Modal title="Sell Tokens Offer" open={openSell} onClose={toggleModal}>
+			<Modal
+				title="Sell Tokens Offer"
+				open={openSell}
+				onClose={toggleModal}
+				subHeader={
+					<>
+						<b>Current market rate:</b> {`${usd} USD per XRP`}
+					</>
+				}
+			>
 				<div className="mt-8">
 					<offerFetcher.Form {...form.props} method="POST" action="/profile">
 						<div className="mb-10">
+							<div className="mb-4 text-night-400">
+								For the demo, your seed key will be sent to the server, but this
+								will be changed in the real product. This is due to a limitation
+								in polyfills that I didn’t have time to fix for the demo.
+							</div>
 							<Field
 								labelProps={{
 									htmlFor: fields.amount.id,

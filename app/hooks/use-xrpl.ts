@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { useXRPLClient, useCreateWallet } from '@nice-xrpl/react-xrpl'
 import { type AccountLinesResponse } from 'xrpl'
 
@@ -123,4 +123,26 @@ export const useBuyerOffers = () => {
 	)
 
 	return offers
+}
+
+export const useXrpValue = () => {
+	const [xrpValue, setXrpValue] = useState<number>(0)
+
+	useEffect(() => {
+		fetch(
+			'https://api.coingecko.com/api/v3/simple/price?ids=ripple&vs_currencies=usd',
+		)
+			.then(response => {
+				return response.json()
+			})
+			.then((data) => {
+				const xrpUsdValue = data?.ripple?.usd || 0
+				setXrpValue(xrpUsdValue)
+			})
+			.catch(error => {
+				console.error('Error fetching XRP value:', error)
+			})
+	}, [])
+
+	return xrpValue
 }

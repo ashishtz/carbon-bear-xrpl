@@ -6,6 +6,7 @@ interface ModalShape {
 	open: boolean
 	children: ReactNode
 	title: string
+	subHeader?: ReactNode
 }
 
 export default function Modal(props: ModalShape) {
@@ -19,8 +20,11 @@ export default function Modal(props: ModalShape) {
 					onPointerDownOutside={props.onClose}
 					className="fixed left-1/2 top-1/2 w-[30vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-night-500 p-12 shadow-lg"
 				>
-					<Dialog.Title asChild className="text-center">
+					<Dialog.Title className="text-center">
 						<h3 className="text-h3">{props.title}</h3>
+						{!!props.subHeader && (
+							<p className="mt-4 text-white">{props.subHeader}</p>
+						)}
 					</Dialog.Title>
 					{props.children}
 					<Dialog.Close

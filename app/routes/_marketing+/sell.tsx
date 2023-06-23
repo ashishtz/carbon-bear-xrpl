@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { json, type DataFunctionArgs } from '@remix-run/node'
+import { type DataFunctionArgs, json } from '@remix-run/node'
 import { type BookOffer } from 'xrpl'
 import { useFetcher, useLoaderData } from '@remix-run/react'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ import { conform, useForm } from '@conform-to/react'
 import { Button, ErrorList, Field } from '~/utils/forms'
 import Modal from '~/components/modal'
 import { requireAuthenticated } from '~/utils/auth.server'
-import { useSellOffers } from '~/hooks/use-xrpl'
+import { useSellOffers, useXrpValue } from '~/hooks/use-xrpl'
 import { getSession } from '~/utils/session.server'
 import { createOffer, validateWallet } from '~/utils/xrpl.server'
 import ListView from '~/components/ListView'
@@ -97,6 +97,7 @@ export default function Sell() {
 	const [showDesc, setShowDesc] = useState(false)
 	const [offer, setOffer] = useState<BookOffer>({})
 	const [acceptOpen, setAcceptOpen] = useState(false)
+	const usd = useXrpValue()
 
 	const handleOffers = useCallback(() => {
 		getSellerOffers(data.issuer!).then(offers => {
@@ -232,10 +233,20 @@ export default function Sell() {
 					</div>
 				</div>
 			</div>
-			<Modal title="Sell Tokens Offer" open={openSell} onClose={toggleModal}>
+			<Modal
+				title="Sell Tokens Offer"
+				open={openSell}
+				onClose={toggleModal}
+				subHeader={<><b>Current market rate:</b> {`${usd} USD per XRP`}</>}
+			>
 				<div className="mt-8">
 					<offerFetcher.Form {...form.props} method="POST" action="/profile">
 						<div className="mb-10">
+							<div className="mb-4 text-night-400">
+								For the demo, your seed key will be sent to the server, but this
+								will be changed in the real product. This is due to a limitation
+								in polyfills that I didn’t have time to fix for the demo.
+							</div>
 							<Field
 								labelProps={{
 									htmlFor: fields.amount.id,
@@ -288,6 +299,7 @@ export default function Sell() {
 				</div>
 			</Modal>
 			<AcceptOffer
+				offerType="sell"
 				isOpen={acceptOpen}
 				onAccepted={() => {
 					handleOffers()

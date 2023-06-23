@@ -90,7 +90,7 @@ export default function UserProfile() {
 										<label className="text-body-md font-bold">
 											Carbon Reduction
 										</label>
-										<div>{product.carbon} tons</div>
+										<div>{product.carbon} grams</div>
 									</div>
 								</div>
 							</div>

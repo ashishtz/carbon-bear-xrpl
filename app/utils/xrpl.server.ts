@@ -164,7 +164,7 @@ export async function mintToken(accountId: string, product: Product) {
 
 export const createOffer = async (
 	sellerWallet: Wallet,
-	payload: { amount: string; xrp: string },
+	payload: { amount: string; xrp: string; },
 ) => {
 	const client = xrplClient()
 	await client.connect()
@@ -183,7 +183,7 @@ export const createOffer = async (
 		TransactionType: 'OfferCreate',
 		Account: sellerWallet.address,
 		TakerPays,
-		TakerGets,
+		TakerGets
 	}
 
 	try {
@@ -206,7 +206,7 @@ export const createOffer = async (
 
 export const createSellOffer = async (
 	sellerWallet: Wallet,
-	payload: { bear: string; xrp: string },
+	payload: { bear: string; xrp: string; },
 ) => {
 	const client = xrplClient()
 	await client.connect()
@@ -225,7 +225,7 @@ export const createSellOffer = async (
 		TransactionType: 'OfferCreate',
 		Account: sellerWallet.address,
 		TakerPays,
-		TakerGets,
+		TakerGets
 	}
 
 	try {
@@ -249,33 +249,20 @@ export const createSellOffer = async (
 export const acceptOffer = async (
 	wallet: Wallet,
 	payload: {
-		sequence: string
+		xrp: string
+		bear: string
+		seed: string
+		offerType: string
 	},
 ) => {
-	const client = xrplClient()
-	await client.connect()
+	console.log('payload', payload);
+	const { xrp, bear, offerType } = payload
 
-	const address = wallet.address
-	const { sequence } = payload
-
-	const transaction = {
-		TransactionType: 'OfferAccept',
-		Account: address,
-		OfferSequence: sequence,
-		LastLedgerSequence: 0,
-	}
 	try {
-		const preparedTransaction = await client.autofill(transaction)
-		const signedTransaction = wallet.sign(preparedTransaction)
-		const result = await client.submitAndWait(signedTransaction.tx_blob)
-
-		const resultMeta = result.result.meta as TransactionMetadata
-
-		if (resultMeta.TransactionResult !== 'tesSUCCESS') {
-			return null
+		if (offerType === 'sell') {
+			return createOffer(wallet, { amount: bear, xrp })
 		}
-
-		return result.result
+		return createSellOffer(wallet, { bear, xrp })
 	} catch (err) {
 		console.log('err', err)
 		return null

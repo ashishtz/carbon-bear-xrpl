@@ -8,19 +8,23 @@ import { Button, ErrorList, Field } from '~/utils/forms'
 import { getSession } from '~/utils/session.server'
 import { acceptOffer, validateWallet } from '~/utils/xrpl.server'
 import { type BookOffer } from 'xrpl'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import Modal from '~/components/modal'
+import { useXrpValue } from '~/hooks/use-xrpl'
 
 interface AcceptOfferShape {
 	offer: BookOffer
 	onAccepted: () => void
 	isOpen: boolean
 	toggle: () => void
+	offerType: 'buy' | 'sell'
 }
 
 export const AcceptOfferSchema = z.object({
 	seed: z.string().min(1, 'Account ID is required'),
-	sequence: z.string().min(1, 'Account ID is required'),
+	xrp: z.string().min(1, 'Account ID is required'),
+	bear: z.string().min(1, 'Account ID is required'),
+	offerType: z.string().min(1, 'Account ID is required'),
 })
 
 export async function action({ request }: DataFunctionArgs) {
@@ -104,8 +108,10 @@ export function AcceptOffer({
 	onAccepted,
 	isOpen,
 	toggle,
+	offerType,
 }: AcceptOfferShape) {
 	const offerFetcher = useFetcher<typeof action>()
+	const usd = useXrpValue()
 
 	const [form, fields] = useForm({
 		id: 'inline-login',
@@ -117,6 +123,20 @@ export function AcceptOffer({
 		shouldRevalidate: 'onBlur',
 	})
 
+	const payload = useMemo(() => {
+		const bear =
+			offerType === 'buy'
+				? offer.TakerGets?.value || 0
+				: offer.TakerPays?.value || 0
+		const xrpTokens =
+			offerType === 'buy' ? offer.TakerPays || 0 : offer.TakerGets || 0
+
+		return {
+			bear,
+			xrp: Number(xrpTokens) / 1000000 / Number(bear),
+		}
+	}, [offerType, offer])
+
 	useEffect(() => {
 		if (offerFetcher.data?.status === 'success') {
 			onAccepted()
@@ -124,7 +144,16 @@ export function AcceptOffer({
 	}, [onAccepted, offerFetcher])
 
 	return (
-		<Modal title="Accept Offer" open={isOpen} onClose={toggle}>
+		<Modal
+			title="Accept Offer"
+			open={isOpen}
+			onClose={toggle}
+			subHeader={
+				<>
+					<b>Current market rate:</b> {`${usd} USD per XRP`}
+				</>
+			}
+		>
 			<offerFetcher.Form
 				method="POST"
 				action="/resources/accept-offer"
@@ -132,6 +161,11 @@ export function AcceptOffer({
 				{...form.props}
 			>
 				<div className="mb-10 mt-10">
+					<div className="mb-4 text-night-400">
+						For the demo, your seed key will be sent to the server, but this
+						will be changed in the real product. This is due to a limitation in
+						polyfills that I didn’t have time to fix for the demo.
+					</div>
 					<Field
 						labelProps={{
 							htmlFor: fields.seed.id,
@@ -140,10 +174,19 @@ export function AcceptOffer({
 						inputProps={conform.input(fields.seed, { type: 'password' })}
 						errors={fields.seed.errors}
 					/>
-
 					<input
-						value={offer.Sequence}
-						{...conform.input(fields.sequence)}
+						value={offerType}
+						{...conform.input(fields.offerType)}
+						type="hidden"
+					/>
+					<input
+						value={payload.bear}
+						{...conform.input(fields.bear)}
+						type="hidden"
+					/>
+					<input
+						value={payload.xrp}
+						{...conform.input(fields.xrp)}
 						type="hidden"
 					/>
 					<ErrorList errors={form.errors} id={form.errorId} />
