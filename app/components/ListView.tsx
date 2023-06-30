@@ -6,6 +6,7 @@ interface ListViewShape {
 	onChange: (record: BookOffer) => void
 	accountid: string
 	type: 'seller' | 'buyer'
+	isLoading: boolean
 }
 
 const ListView = ({
@@ -13,9 +14,15 @@ const ListView = ({
 	onChange,
 	accountid,
 	type = 'buyer',
+	isLoading,
 }: ListViewShape) => {
 	return (
-		<>
+		<div className="relative">
+			{isLoading && (
+				<div className="absolute left-0 right-0 top-0 bottom-0">
+					<span className="inline-block animate-spin text-5xl">🌀</span>
+				</div>
+			)}
 			<div className="ml-7 mr-7 mt-7 flex justify-between text-sm font-extrabold">
 				<label className="w-1/2">BEAR Tokens</label>
 				<label className="w-1/2">XRP</label>
@@ -56,7 +63,7 @@ const ListView = ({
 					</div>
 				)
 			})}
-		</>
+		</div>
 	)
 }
 

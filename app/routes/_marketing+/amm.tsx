@@ -1,4 +1,19 @@
 import React from 'react'
+import OrderFlow from '~/images/amm_order_flow.png'
+import GainMoney from '~/images/amm_gain_money_on_fees.png'
+import PaymentFlow from '~/images/typical_payment_flow_order_books.png'
+
+
+const Image = (
+	props: React.DetailedHTMLProps<
+		React.ImgHTMLAttributes<HTMLImageElement>,
+		HTMLImageElement
+	>,
+) => (
+	<div className="flex w-full items-center justify-center my-5">
+		<img {...props} alt={props.alt} />
+	</div>
+)
 
 const AMM = () => {
 	return (
@@ -13,6 +28,7 @@ const AMM = () => {
 				algorithms and decentralized infrastructure, the XRPL AMM provides a
 				secure and reliable platform for liquidity provision and token swaps.
 			</p>
+			<Image src={OrderFlow} alt="AMM order flow" />
 			<h2 className="mb-2 text-2xl font-bold">Key Features of XRPL AMM:</h2>
 			<ul className="mb-6 list-inside list-disc">
 				<li className="mb-2">
@@ -59,6 +75,7 @@ const AMM = () => {
 					reliance on intermediaries, resulting in reduced fees for users.
 				</li>
 			</ul>
+			<Image src={GainMoney} alt="AMM order flow" />
 			<h2 className="mb-2 text-2xl font-bold">Why Choose XRPL AMM?</h2>
 			<p className="mb-6 text-lg">
 				XRPL AMM offers numerous benefits for token holders, traders, and
@@ -92,6 +109,7 @@ const AMM = () => {
 					the XRPL.
 				</li>
 			</ul>
+			<Image src={PaymentFlow} alt="AMM order flow" />
 			<p className="mb-6 text-lg">
 				Discover the possibilities of decentralized trading with the XRPL AMM.
 				Join the growing community of liquidity providers and traders today!

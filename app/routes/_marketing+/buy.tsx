@@ -99,20 +99,29 @@ export default function Buy() {
 	const [showDesc, setShowDesc] = useState(false)
 	const [offer, setOffer] = useState<BookOffer>({})
 	const [acceptOpen, setAcceptOpen] = useState(false)
+	const [loading, setLoading] = useState(true)
 	const usd = useXrpValue()
 
 	const handleOffers = useCallback(() => {
-		getSellerOffers(data.issuer!).then(offers => {
-			setTokensToSell(
-				offers.buy.reduce((acc, curr) => {
-					return acc + (+curr.TakerGets?.value || 0)
-				}, 0),
-			)
-			setSellerOffers(
-				offers.buy.filter(offer => typeof offer.TakerPays === 'string'),
-			)
-		})
-	}, [setSellerOffers, getSellerOffers, data.issuer])
+		setLoading(true)
+		getSellerOffers(data.issuer!)
+			.then(offers => {
+				setTokensToSell(
+					offers.buy.reduce((acc, curr) => {
+						return acc + (+curr.TakerGets?.value || 0)
+					}, 0),
+				)
+				setSellerOffers(
+					offers.buy.filter(offer => typeof offer.TakerPays === 'string'),
+				)
+			})
+			.catch(err => {
+				console.log('err', err)
+			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}, [setSellerOffers, getSellerOffers, data.issuer, setLoading])
 
 	useEffect(() => {
 		handleOffers()
@@ -243,6 +252,7 @@ export default function Buy() {
 						</div>
 						<div>
 							<ListView
+								isLoading={loading}
 								records={sellerOffers}
 								type="buyer"
 								accountid={data.accountId}

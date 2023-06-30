@@ -97,16 +97,25 @@ export default function Sell() {
 	const [showDesc, setShowDesc] = useState(false)
 	const [offer, setOffer] = useState<BookOffer>({})
 	const [acceptOpen, setAcceptOpen] = useState(false)
+	const [loading, setLoading] = useState(true)
 	const usd = useXrpValue()
 
 	const handleOffers = useCallback(() => {
-		getSellerOffers(data.issuer!).then(offers => {
-			setBuyerOffers(
-				offers.buy.filter(offer => typeof offer.TakerGets === 'string'),
-			)
-			return true
-		})
-	}, [setBuyerOffers, getSellerOffers, data.issuer])
+		setLoading(true)
+		getSellerOffers(data.issuer!)
+			.then(offers => {
+				setBuyerOffers(
+					offers.buy.filter(offer => typeof offer.TakerGets === 'string'),
+				)
+				return true
+			})
+			.catch(err => {
+				console.log('err', err)
+			})
+			.finally(() => {
+				setLoading(false)
+			})
+	}, [setBuyerOffers, getSellerOffers, data.issuer, setLoading])
 
 	useEffect(() => {
 		handleOffers()
@@ -221,6 +230,7 @@ export default function Sell() {
 						</div>
 						<div>
 							<ListView
+								isLoading={loading}
 								type="seller"
 								records={buyerOffers}
 								accountid={data.accountId}
@@ -237,7 +247,11 @@ export default function Sell() {
 				title="Sell Tokens Offer"
 				open={openSell}
 				onClose={toggleModal}
-				subHeader={<><b>Current market rate:</b> {`${usd} USD per XRP`}</>}
+				subHeader={
+					<>
+						<b>Current market rate:</b> {`${usd} USD per XRP`}
+					</>
+				}
 			>
 				<div className="mt-8">
 					<offerFetcher.Form {...form.props} method="POST" action="/profile">
