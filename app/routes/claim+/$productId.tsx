@@ -8,7 +8,6 @@ import { useForm } from '@conform-to/react'
 import {
 	claimPurchase,
 	findProduct,
-	type Product,
 } from '~/utils/resource.server'
 import { getSession } from '~/utils/session.server'
 import { useState } from 'react'
@@ -129,9 +128,9 @@ const ProductDetails = () => {
 					</div>
 				)}
 			</div>
-			<div className="mt-10 flex p-4">
+			<div className="mt-10 lg:flex p-4">
 				<div>
-					<div className="w-[40rem] border">
+					<div className="border flex justify-center lg:w-[30rem] xl:w-[40rem]">
 						<img
 							alt={product.name}
 							src={product.image}
@@ -139,7 +138,7 @@ const ProductDetails = () => {
 						/>
 					</div>
 				</div>
-				<div className="ml-20">
+				<div className="mt-20 lg:ml-20 lg:mt-0">
 					<h3 className="text-h2">{product.name}</h3>
 					<div className="mt-16">
 						<label className="text-h4">Carbon Reduction: </label>

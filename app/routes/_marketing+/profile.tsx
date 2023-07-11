@@ -192,8 +192,8 @@ export default function UserProfile() {
 						Create Sell Offer
 					</Button>
 				</div>
-				<div className="flex items-center justify-between text-center">
-					<div className="w-[45%] border border-white p-3">
+				<div className="flex items-center justify-between text-center flex-wrap">
+					<div className="w-full mb-8 md:mb-0 md:w-[45%] border border-white p-3">
 						<h3 className="mb-2 text-h3">Bear Tokens</h3>
 						<div className="flex justify-between">
 							<div className="w-[45%]">
@@ -206,7 +206,7 @@ export default function UserProfile() {
 							</div>
 						</div>
 					</div>
-					<div className="w-[45%] border border-white  p-3">
+					<div className="w-full md:w-[45%] border border-white  p-3">
 						<h3 className="mb-2 text-h3">XRP</h3>
 						<div className="flex justify-center">
 							<div className="w-[45%]">

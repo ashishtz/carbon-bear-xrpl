@@ -18,7 +18,7 @@ export default function Modal(props: ModalShape) {
 					onEscapeKeyDown={props.onClose}
 					onInteractOutside={props.onClose}
 					onPointerDownOutside={props.onClose}
-					className="fixed left-1/2 top-1/2 w-[30vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-night-500 p-12 shadow-lg"
+					className="fixed left-1/2 top-1/2 w-full md:w-[50vw] lg:w-[30vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-night-500 p-12 shadow-lg"
 				>
 					<Dialog.Title className="text-center">
 						<h3 className="text-h3">{props.title}</h3>

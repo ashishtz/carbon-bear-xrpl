@@ -67,11 +67,11 @@ export default function UserProfile() {
 				)}
 			</div>
 			<div className="p-10">
-				<div className="flex items-center justify-evenly text-center">
+				<div className="flex items-center justify-evenly text-center flex-wrap">
 					{products.map(product => {
 						return (
 							<div
-								className="h-[40rem] w-[40rem] cursor-pointer border border-white pb-2"
+								className="w-full md:h-[40rem] md:w-[40rem] cursor-pointer border border-white pb-2 mb-4"
 								key={product.name}
 								onClick={() => {
 									navigate(`/claim/${product.id}`)
@@ -81,7 +81,7 @@ export default function UserProfile() {
 									<img
 										alt={product.name}
 										src={product.image}
-										className="h-[30rem] max-w-full"
+										className="max-w-full md:h-[30rem]"
 									/>
 								</div>
 								<div>

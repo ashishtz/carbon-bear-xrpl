@@ -7,7 +7,7 @@ export interface AccountInfoShape extends XRPLWalletInitialState {
 
 const AccountInfo = ({ account, wallet }: AccountInfoShape) => {
 	return (
-		<div>
+		<div className="overflow-auto lg:overflow-visible mt-4">
 			<b className="text-lg">Please save below information for future use</b>
 
 			<div><b>Account ID(Use this Id to login) : </b>{account.result.account_data.Account}</div>

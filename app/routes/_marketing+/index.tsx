@@ -39,7 +39,7 @@ export default function LoginPage() {
 	const redirectTo = searchParams.get('redirectTo') || '/'
 
 	return (
-		<div className="flex min-h-full flex-col justify-center pb-32 pt-20">
+		<div className="flex min-h-full flex-col justify-center pb-32 pt-20 px-8 md:px-0">
 			<div className="mb-10 text-night-200 flex justify-center">
 				<ul className="list-disc">
 					<li>

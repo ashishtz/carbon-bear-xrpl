@@ -66,11 +66,6 @@ COPY --from=build /myapp/package.json /myapp/package.json
 COPY --from=build /myapp/other/start.js /myapp/other/start.js
 COPY --from=build /myapp/prisma /myapp/prisma
 
-# prepare for litefs
-COPY --from=flyio/litefs:0.4.0 /usr/local/bin/litefs /usr/local/bin/litefs
-ADD other/litefs.yml /etc/litefs.yml
-RUN mkdir -p /data ${LITEFS_DIR}
-
 ADD . .
 
-CMD ["litefs", "mount", "--", "node", "./other/start.js"]
+CMD ["npm", "start"]
